@@ -39,6 +39,26 @@ import {
   toComicListItem,
 } from "./parse";
 import { buildPluginInfo } from "./get-info";
+import { authConfig } from "breeze-plugin-kit";
+import {
+  applyTranslateSettings,
+  isDisplayTranslateEnabled,
+  translateChapterNames,
+  translateListTitles,
+  translateToChinese,
+} from "./translate-display";
+
+/** 设置里开了「显示翻译」才生效：把列表标题批量译成中文 */
+async function maybeTranslateTitles<T extends { title: string }>(items: T[]): Promise<T[]> {
+  if (!(await isDisplayTranslateEnabled())) {
+    return items;
+  }
+  try {
+    return await translateListTitles(items);
+  } catch {
+    return items;
+  }
+}
 
 function toNumber(value: unknown, fallback: number): number {
   const parsed = Number(value);
@@ -104,10 +124,11 @@ async function searchComic(payload: SearchComicPayload): Promise<SearchResultCon
   }
 
   const { items, hasMore } = await fetchList({ text: keyword, page, sort: "Popularity", order: "Descending" });
+  const translatedItems = await maybeTranslateTitles(items);
   const paging = {
     page,
     pages: hasMore ? page + 1 : page,
-    total: hasMore ? (page + 1) * PAGE_SIZE : (page - 1) * PAGE_SIZE + items.length,
+    total: hasMore ? (page + 1) * PAGE_SIZE : (page - 1) * PAGE_SIZE + translatedItems.length,
     hasReachedMax: !hasMore,
   };
 
@@ -115,9 +136,9 @@ async function searchComic(payload: SearchComicPayload): Promise<SearchResultCon
     source: PLUGIN_ID,
     extern: null,
     scheme: { version: "1.0.0", type: "searchResult", source: PLUGIN_ID, list: "grid" },
-    data: { paging, items },
+    data: { paging, items: translatedItems },
     paging,
-    items,
+    items: translatedItems,
   };
 }
 
@@ -132,11 +153,12 @@ async function getRankingData(payload: SearchComicPayload): Promise<ComicPagedLi
   const type = pickString(extern.type, record.type);
 
   const { items, hasMore } = await fetchList({ page, sort, order, status, type });
+  const translatedItems = await maybeTranslateTitles(items);
 
   return {
     source: PLUGIN_ID,
     extern: null,
-    data: { items, hasReachedMax: !hasMore },
+    data: { items: translatedItems, hasReachedMax: !hasMore },
   };
 }
 
@@ -209,7 +231,7 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
 
   // 站点的章节列表是新→旧，翻转为旧→新，符合阅读顺序
   const ordered = [...entries].reverse();
-  const chapters: ChapterSummary[] = ordered.map((entry, index) => ({
+  let chapters: ChapterSummary[] = ordered.map((entry, index) => ({
     id: entry.ulid,
     requestId: entry.ulid,
     logicalKey: `${comicId}-${entry.ulid}`,
@@ -218,6 +240,33 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
     order: index + 1,
     extern: {},
   }));
+
+  // 可选：标题/简介/章节名译成中文（设置里开启后生效）
+  let displayTitle = detail.title;
+  let displayDescription = detail.description;
+  if (await isDisplayTranslateEnabled()) {
+    try {
+      const [titleZh, descZh, nameMap] = await Promise.all([
+        translateToChinese(detail.title),
+        translateToChinese(detail.description),
+        translateChapterNames(chapters.map((chapter) => chapter.name)),
+      ]);
+      if (titleZh && titleZh !== detail.title) {
+        displayTitle = `${titleZh}（${detail.title}）`;
+      }
+      if (descZh) {
+        displayDescription = descZh;
+      }
+      if (nameMap.size > 0) {
+        chapters = chapters.map((chapter) => ({
+          ...chapter,
+          name: nameMap.get(chapter.name) ?? chapter.name,
+        }));
+      }
+    } catch {
+      // 翻译失败保留原文
+    }
+  }
 
   return {
     source: PLUGIN_ID,
@@ -228,7 +277,7 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
       normal: {
         comicInfo: {
           id: comicId,
-          title: detail.title,
+          title: displayTitle,
           titleMeta: [],
           creator: {
             id: "",
@@ -237,7 +286,7 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
             onTap: null,
             extern: {},
           },
-          description: detail.description,
+          description: displayDescription,
           cover: createImage({
             id: comicId,
             url: detail.coverUrl,
@@ -415,10 +464,48 @@ async function getSettingsBundle(): Promise<SettingsBundleContract> {
       type: "settings",
       sections: [
         { id: "about", title: "无需登录，直接可读", fields: [] },
+        {
+          id: "translate",
+          title: "在线翻译（实验性）",
+          fields: [
+            {
+              key: "translate.display",
+              kind: "switch",
+              label: "把标题/简介/章节名翻译成中文（免费翻译接口，速度较慢且有配额）",
+            },
+            {
+              key: "translate.email",
+              kind: "text",
+              label: "MyMemory 邮箱（可选，注册用户配额更高）",
+            },
+          ],
+        },
       ],
     },
-    data: { canShowUserInfo: false, canLogin: false, values: {} },
+    data: {
+      canShowUserInfo: false,
+      canLogin: false,
+      values: {
+        "translate.display": (await isDisplayTranslateEnabled()) ? "true" : "false",
+        "translate.email": "",
+      },
+    },
   };
+}
+
+async function onSettingChanged(payload?: Record<string, unknown>) {
+  const key = typeof payload?.key === "string" ? payload.key : "";
+  const raw = payload?.value;
+  const value = typeof raw === "boolean" ? (raw ? "true" : "false") : String(raw ?? "");
+  if (key) {
+    try {
+      await authConfig.save(key, value);
+    } catch {
+      // 持久化失败不影响本次会话
+    }
+    applyTranslateSettings({ [key]: value });
+  }
+  return { source: PLUGIN_ID, data: { ok: true } };
 }
 
 async function getCapabilitiesBundle(): Promise<CapabilitiesBundleContract> {
@@ -450,5 +537,6 @@ export default {
   fetchImageBytes,
   getDownloadConcurrency,
   getSettingsBundle,
+  onSettingChanged,
   getCapabilitiesBundle,
 };
