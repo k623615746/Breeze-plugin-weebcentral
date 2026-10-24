@@ -3,7 +3,7 @@
   "uuid": "9c4b7a20-1e83-4d5f-8a6b-3d2c9f1e7b45",
   "iconUrl": "https://cdn.jsdelivr.net/gh/k623615746/Breeze-plugin-weebcentral@main/assets/icon.png",
   "describe": "WeebCentral 漫画源（原 MangaSee 的继任站）。\n\n- 英文日漫 / 韩漫 / 国漫为主，资源量大\n- 支持关键词搜索、人气/更新/收录排序\n- 可按连载状态、作品类型筛选\n- 章节图片直连，无需登录\n\n**注意**：站点位于 Cloudflare 之后，插件会带浏览器 UA 请求。\n若出现 403，通常是临时的风控校验，稍后重试即可。\n\nv1.1.0 新增「在线翻译」：设置里开启后，英文标题/简介/章节名会自动翻译成中文显示。\n\n> 内容为社区上传的英文翻译，版权归原作者及出版方所有。",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "home": "https://github.com/k623615746/Breeze-plugin-weebcentral",
   "updateUrl": "https://api.github.com/repos/k623615746/Breeze-plugin-weebcentral/releases/latest",
   "function": [

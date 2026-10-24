@@ -250,39 +250,37 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
     extern: {},
   }));
 
-  // 可选：标题/简介/章节名/标签译成中文（设置里开启后生效）
+  // 详情页翻译始终开启：标题/简介/章节名/标签自动译成中文（列表标题翻译由设置开关控制）
   let displayTitle = detail.title;
   let displayDescription = detail.description;
   // type/status 是固定英文枚举，用查表转中文；tags 用翻译
   let displayType = typeZh(detail.type);
   let displayStatus = statusZh(detail.status);
   let displayTags = detail.tags;
-  if (await isDisplayTranslateEnabled()) {
-    try {
-      const [titleZh, descZh, nameMap, tagMap] = await Promise.all([
-        translateToChinese(detail.title),
-        translateToChinese(detail.description),
-        translateChapterNames(chapters.map((chapter) => chapter.name)),
-        translateTags(detail.tags),
-      ]);
-      if (titleZh && titleZh !== detail.title) {
-        displayTitle = `${titleZh}（${detail.title}）`;
-      }
-      if (descZh) {
-        displayDescription = descZh;
-      }
-      if (nameMap.size > 0) {
-        chapters = chapters.map((chapter) => ({
-          ...chapter,
-          name: nameMap.get(chapter.name) ?? chapter.name,
-        }));
-      }
-      if (tagMap.size > 0) {
-        displayTags = detail.tags.map((tag) => tagMap.get(tag) ?? tag);
-      }
-    } catch {
-      // 翻译失败保留原文
+  try {
+    const [titleZh, descZh, nameMap, tagMap] = await Promise.all([
+      translateToChinese(detail.title),
+      translateToChinese(detail.description),
+      translateChapterNames(chapters.map((chapter) => chapter.name)),
+      translateTags(detail.tags),
+    ]);
+    if (titleZh && titleZh !== detail.title) {
+      displayTitle = `${titleZh}（${detail.title}）`;
     }
+    if (descZh) {
+      displayDescription = descZh;
+    }
+    if (nameMap.size > 0) {
+      chapters = chapters.map((chapter) => ({
+        ...chapter,
+        name: nameMap.get(chapter.name) ?? chapter.name,
+      }));
+    }
+    if (tagMap.size > 0) {
+      displayTags = detail.tags.map((tag) => tagMap.get(tag) ?? tag);
+    }
+  } catch {
+    // 翻译失败保留原文
   }
 
   return {
@@ -488,7 +486,7 @@ async function getSettingsBundle(): Promise<SettingsBundleContract> {
             {
               key: "translate.display",
               kind: "switch",
-              label: "把标题/简介/章节名翻译成中文（免费翻译接口，速度较慢且有配额）",
+              label: "列表标题也翻译成中文（详情页的标题/简介/章节名/标签始终自动翻译）",
             },
             {
               key: "translate.email",
