@@ -272,3 +272,103 @@ export async function translateListTitles<
 export async function translateChapterNames(names: ReadonlyArray<string>): Promise<Map<string, string>> {
   return translateBatch(names, { limit: CHAPTER_LIMIT });
 }
+
+/**
+ * 标签批量翻译成中文。
+ * 返回 原文→中文 映射；同时把已含中文的原文原样保留在映射里，方便调用方直接替换。
+ */
+export async function translateTags(tags: ReadonlyArray<string>): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const needTranslate: string[] = [];
+  for (const raw of tags) {
+    const tag = clean(raw);
+    if (!tag) {
+      continue;
+    }
+    // 优先命中固定术语表（漫画标签语境更准）
+    const known = MANGA_TAG_ZH.get(tag.toLowerCase());
+    if (known) {
+      result.set(tag, known);
+      continue;
+    }
+    if (!isTranslatableText(tag)) {
+      // 已含中文或纯序号等，直接原样
+      result.set(tag, tag);
+      continue;
+    }
+    needTranslate.push(tag);
+  }
+  const translated = await translateBatch(needTranslate, { limit: 30 });
+  for (const [key, value] of translated) {
+    result.set(key, value);
+  }
+  // 未翻译成功的也原样保留
+  for (const tag of needTranslate) {
+    if (!result.has(tag)) {
+      result.set(tag, tag);
+    }
+  }
+  return result;
+}
+
+/** 常见漫画标签/类型的中文术语表（比机器翻译更准确） */
+const MANGA_TAG_ZH = new Map<string, string>([
+  ["action", "动作"],
+  ["adventure", "冒险"],
+  ["comedy", "喜剧"],
+  ["drama", "剧情"],
+  ["fantasy", "奇幻"],
+  ["romance", "爱情"],
+  ["slice of life", "日常"],
+  ["slice-of-life", "日常"],
+  ["sci-fi", "科幻"],
+  ["science fiction", "科幻"],
+  ["horror", "恐怖"],
+  ["mystery", "悬疑"],
+  ["thriller", "惊悚"],
+  ["psychological", "心理"],
+  ["supernatural", "超自然"],
+  ["historical", "历史"],
+  ["martial arts", "武术"],
+  ["sports", "运动"],
+  ["school", "校园"],
+  ["school life", "校园"],
+  ["harem", "后宫"],
+  ["isekai", "异世界"],
+  ["mecha", "机甲"],
+  ["music", "音乐"],
+  ["game", "游戏"],
+  ["magic", "魔法"],
+  ["military", "军事"],
+  ["crime", "犯罪"],
+  ["detective", "侦探"],
+  ["tragedy", "悲剧"],
+  ["seinen", "青年"],
+  ["shounen", "少年"],
+  ["shonen", "少年"],
+  ["shoujo", "少女"],
+  ["shojo", "少女"],
+  ["josei", "女性"],
+  ["ecchi", "擦边"],
+  ["harem", "后宫"],
+  ["adult", "成人"],
+  ["mature", "成人"],
+  ["gore", "血腥"],
+  ["monster", "怪兽"],
+  ["demons", "恶魔"],
+  ["vampire", "吸血鬼"],
+  ["zombie", "丧尸"],
+  ["apocalypse", "末日"],
+  ["survival", "生存"],
+  ["manga", "日漫"],
+  ["manhwa", "韩漫"],
+  ["manhua", "国漫"],
+  ["webtoon", "网络漫画"],
+  ["ongoing", "连载中"],
+  ["completed", "已完结"],
+  ["complete", "已完结"],
+  ["hiatus", "休载"],
+  ["canceled", "已取消"],
+  ["cancelled", "已取消"],
+  ["oel", "欧美"],
+]);

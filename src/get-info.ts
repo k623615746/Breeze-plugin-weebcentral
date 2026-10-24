@@ -70,7 +70,7 @@ export function buildPluginInfo(): InfoContract {
       "",
       "> 内容为社区上传的英文翻译，版权归原作者及出版方所有。",
     ].join("\n"),
-    version: "1.1.0",
+    version: "1.2.0",
     home: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`,
     updateUrl: UPDATE_URL,
     function: buildFunctions(),

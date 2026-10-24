@@ -45,6 +45,7 @@ import {
   isDisplayTranslateEnabled,
   translateChapterNames,
   translateListTitles,
+  translateTags,
   translateToChinese,
 } from "./translate-display";
 
@@ -58,6 +59,14 @@ async function maybeTranslateTitles<T extends { title: string }>(items: T[]): Pr
   } catch {
     return items;
   }
+}
+
+/** 英文枚举 → 中文（type/status 固定词，查表比翻译更准） */
+function typeZh(value: string): string {
+  return TYPE_OPTIONS.find((item) => item.value === value)?.label ?? value;
+}
+function statusZh(value: string): string {
+  return STATUS_OPTIONS.find((item) => item.value === value)?.label ?? value;
 }
 
 function toNumber(value: unknown, fallback: number): number {
@@ -241,15 +250,20 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
     extern: {},
   }));
 
-  // 可选：标题/简介/章节名译成中文（设置里开启后生效）
+  // 可选：标题/简介/章节名/标签译成中文（设置里开启后生效）
   let displayTitle = detail.title;
   let displayDescription = detail.description;
+  // type/status 是固定英文枚举，用查表转中文；tags 用翻译
+  let displayType = typeZh(detail.type);
+  let displayStatus = statusZh(detail.status);
+  let displayTags = detail.tags;
   if (await isDisplayTranslateEnabled()) {
     try {
-      const [titleZh, descZh, nameMap] = await Promise.all([
+      const [titleZh, descZh, nameMap, tagMap] = await Promise.all([
         translateToChinese(detail.title),
         translateToChinese(detail.description),
         translateChapterNames(chapters.map((chapter) => chapter.name)),
+        translateTags(detail.tags),
       ]);
       if (titleZh && titleZh !== detail.title) {
         displayTitle = `${titleZh}（${detail.title}）`;
@@ -262,6 +276,9 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
           ...chapter,
           name: nameMap.get(chapter.name) ?? chapter.name,
         }));
+      }
+      if (tagMap.size > 0) {
+        displayTags = detail.tags.map((tag) => tagMap.get(tag) ?? tag);
       }
     } catch {
       // 翻译失败保留原文
@@ -296,8 +313,8 @@ async function getComicDetail(payload: ComicDetailPayload): Promise<ComicDetailC
           }),
           metadata: [
             createMetadata("author", "作者", detail.authors),
-            createMetadata("categories", "标签", detail.tags),
-            createMetadata("tags", "信息", [detail.type, detail.status, detail.released].filter(Boolean)),
+            createMetadata("categories", "标签", displayTags),
+            createMetadata("tags", "信息", [displayType, displayStatus, detail.released].filter(Boolean)),
           ],
           extern: {},
         },
