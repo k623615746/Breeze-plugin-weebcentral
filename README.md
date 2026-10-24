@@ -4,7 +4,7 @@
 站点是原 MangaSee 的继任站，英文日漫 / 韩漫 / 国漫资源量很大。
 
 - 仓库：<https://github.com/k623615746/Breeze-plugin-weebcentral>
-- 版本：1.0.0
+- 版本：1.0.1
 - 站点：<https://weebcentral.com>
 
 ---
@@ -26,7 +26,7 @@
 同一对话框选「从网络安装」，填入：
 
 ```
-https://github.com/k623615746/Breeze-plugin-weebcentral/releases/download/1.0.0/breeze-plugin-weebcentral.bundle.cjs
+https://github.com/k623615746/Breeze-plugin-weebcentral/releases/download/1.0.1/breeze-plugin-weebcentral.bundle.cjs
 ```
 
 ---
