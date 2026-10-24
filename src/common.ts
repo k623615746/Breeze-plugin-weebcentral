@@ -172,13 +172,24 @@ export async function siteFetch(pathOrUrl: string, options: FetchOptions = {}): 
     headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
   }
 
-  const res = await fetch(url, {
+  // Cloudflare 偶发 403/503（风控抖动）：等待 2 秒重试一次，再失败才报错
+  let res = await fetch(url, {
     method: options.method ?? "GET",
     headers,
     body: options.body,
     redirect: "follow",
     signal: AbortSignal.timeout(options.timeoutMs ?? 25000),
   });
+  if (res.status === 403 || res.status === 503) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+    res = await fetch(url, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body,
+      redirect: "follow",
+      signal: AbortSignal.timeout(options.timeoutMs ?? 25000),
+    });
+  }
 
   if (res.status === 403) {
     throw new Error("WeebCentral 拒绝访问（403）：可能触发了 Cloudflare 校验，稍后重试");
