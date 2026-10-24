@@ -54,7 +54,7 @@ export function buildPluginInfo(): InfoContract {
   return {
     name: "WeebCentral",
     uuid: PLUGIN_ID,
-    iconUrl: `${COVER_BASE}/placeholder.jpg`,
+    iconUrl: "https://cdn.jsdelivr.net/gh/k623615746/Breeze-plugin-weebcentral@main/assets/icon.png",
     describe: [
       "WeebCentral 漫画源（原 MangaSee 的继任站）。",
       "",
@@ -68,7 +68,7 @@ export function buildPluginInfo(): InfoContract {
       "",
       "> 内容为社区上传的英文翻译，版权归原作者及出版方所有。",
     ].join("\n"),
-    version: "1.0.0",
+    version: "1.0.1",
     home: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`,
     updateUrl: UPDATE_URL,
     function: buildFunctions(),

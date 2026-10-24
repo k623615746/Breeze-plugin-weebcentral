@@ -1,12 +1,16 @@
 {
   "name": "breeze-plugin-weebcentral",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Breeze 插件：WeebCentral 漫画源",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && node --import tsx build/generate-version.ts && node --import tsx build/generate-manifest.ts && cross-env NODE_OPTIONS=\"--import tsx\" rspack build && node --import tsx build/generate-brotli.ts"
   },
-  "dependencies": { "breeze-plugin-kit": "^0.14.0" }
+  "dependencies": {
+    "breeze-plugin-kit": "^0.14.0"
+  }
 }

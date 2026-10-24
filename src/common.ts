@@ -13,7 +13,7 @@ export const COVER_BASE = "https://temp.compsci88.com/cover/fallback";
 export const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-export const PLACEHOLDER_IMAGE_URL = `${COVER_BASE}/placeholder.jpg`;
+export const PLACEHOLDER_IMAGE_URL = "https://cdn.jsdelivr.net/gh/k623615746/Breeze-plugin-weebcentral@main/assets/icon.png";
 
 export const PAGE_SIZE = 32;
 

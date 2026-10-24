@@ -33,7 +33,7 @@ console.log("\n[WeebCentral E2E]");
 await check("getInfo 注册信息", async () => {
   const info = await plugin.getInfo();
   assert.equal(info.name, "WeebCentral");
-  assert.equal(info.version, "1.0.0");
+  assert.match(info.version, /^\d+\.\d+\.\d+$/);
 });
 
 await check("人气排行列表", async () => {
